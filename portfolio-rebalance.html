@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Collect Text Inputs</title>
+</head>
+
+<body>
+
+    <h2>Portfolio Rebalancing Calculator</h2>
+    <p>Separate multiple-valued inputs with commas</p>
+    <p>Do not use dollar signs</p>
+
+    <input type="text" id="input0" placeholder="Enter existing holding names">
+    <br><br>
+
+    <input type="text" id="input1" placeholder="Enter existing holdings">
+    <br><br>
+
+    <input type="text" id="input2" placeholder="Enter target allocations">
+    <br><br>
+
+    <input type="text" id="input3" placeholder="Enter new money">
+    <br><br>
+
+    <button onclick="setHouseDownPayment()">Set for House Down Payment</button>
+    <button onclick="setRetirementFund()">Set For Retirement Fund</button>
+    <button onclick="collectText()">Rebalance Portfolio</button>
+
+    <h3>Rebalancing Instructions</h3>
+    <pre id="output">No output generated yet.</pre>
+
+    <script>
+        function setHouseDownPayment() {
+            document.getElementById("input0").value = "VTI, VXUS, BND"
+            document.getElementById("input2").value = "60, 10, 30"
+        }
+
+        function setRetirementFund() {
+            document.getElementById("input0").value = "VTI, VXUS"
+            document.getElementById("input2").value = "75, 25"
+        }
+
+
+        function collectText() {
+            const existingHoldingNames = document.getElementById("input0").value.split(',').map(item => item.trim());
+            const existingHoldings = document.getElementById("input1").value.split(',').map(item => parseFloat(item.trim()));
+            const targetAllocations = document.getElementById("input2").value.split(',').map(item => parseFloat(item.trim()));
+            const newMoney = parseFloat(document.getElementById("input3").value);
+
+            console.log(existingHoldingNames)
+            console.log(existingHoldings)
+            console.log(targetAllocations)
+            console.log(newMoney)
+
+            var numHoldings = existingHoldings.length
+
+            var sumExistingHoldings = 0;
+            for(var i = 0; i < numHoldings; i++) {
+                sumExistingHoldings += existingHoldings[i];
+            };
+
+            console.log(sumExistingHoldings)
+
+            var newSum = sumExistingHoldings + newMoney;
+            
+            console.log(newSum)
+
+            goalHoldings = new Array(numHoldings);
+            for(var i = 0; i < numHoldings; i++) {
+                goalHoldings[i] = roundToNearestCent(newSum * targetAllocations[i] / 100.0);
+            };
+            console.log(goalHoldings)
+
+            holdingsToAdd = new Array(numHoldings);
+            for(var i = 0; i < numHoldings; i++) {
+                holdingsToAdd[i] = roundToNearestCent(goalHoldings[i] - existingHoldings[i]);
+            };
+            console.log(holdingsToAdd)
+
+            var outputStr = "To rebalance your portfolio, buy the following amounts of each asset:\n";
+            for(var i = 0; i < numHoldings; i++) {
+                outputStr += existingHoldingNames[i] + ": $" + holdingsToAdd[i].toFixed(2) + "\n"
+            }
+            outputStr += "\nYour final position should look as follows:\n";
+            for(var i = 0; i < numHoldings; i++) {
+                outputStr += existingHoldingNames[i] + ": $" + goalHoldings[i].toFixed(2) + "\n"
+            }
+            outputStr += "TOTAL HOLDINGS: $" + roundToNearestCent(newSum).toFixed(2) + "\n"
+
+            document.getElementById("output").textContent = outputStr;
+        }
+
+        function roundToNearestCent(m) {
+            return Math.round(m * 100) / 100
+        }
+    </script>
+
+</body>
+
+</html>
