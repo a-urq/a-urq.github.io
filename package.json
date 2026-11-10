@@ -1,0 +1,14 @@
+{
+  "name": "personal-website-static-pages",
+  "private": true,
+  "scripts": {
+    "build:chess": "esbuild chess-boardroom/src/app.js --bundle --minify --format=iife --loader:.pgn=text --outfile=chess-boardroom/app.js"
+  },
+  "dependencies": {
+    "chess.js": "^1.4.0",
+    "gifenc": "^1.0.3"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0"
+  }
+}

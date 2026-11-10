@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101914">
+  <meta name="description" content="Explore chess positions, replay PGN games, and export control maps.">
+  <title>Boardroom — Chess Position Visualizer</title>
+  <link rel="stylesheet" href="./style.css?v=3">
+</head>
+<body>
+  <main class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="../" aria-label="Return to Amelia Urquhart’s website"><span class="brand-mark" aria-hidden="true">♞</span><span>BOARDROOM</span></a>
+      <span class="local-badge"><span class="status-dot"></span> PRIVATE · IN YOUR BROWSER</span>
+    </header>
+
+    <section class="intro">
+      <p class="eyebrow">POSITION STUDIO <span>/</span> 01</p>
+      <h1>See the whole<br><em>board.</em></h1>
+      <p class="intro-copy">Explore a position, replay a Lichess game, and see which squares are under pressure.</p>
+    </section>
+
+    <section class="workspace" aria-label="Chess position visualizer">
+      <div class="board-panel">
+        <div class="panel-heading">
+          <div><p class="eyebrow">LIVE PREVIEW</p><h2 id="currentPositionTitle">Current position</h2></div>
+          <button class="icon-button" id="orientationButton" type="button" title="Flip board orientation" aria-label="Flip board orientation">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8V4m0 0h4M4 4l5 5m11 7v4m0 0h-4m4 0-5-5M8 20h8M8 4h8M4 8v8m16-8v8"/></svg>
+          </button>
+        </div>
+        <div class="board-wrap"><div id="board" class="board" role="img" aria-label="Chess board"></div></div>
+        <div class="board-caption"><span class="caption-marker"></span><span id="boardCaption">White at bottom</span><span class="caption-rule"></span><span>8 × 8</span></div>
+        <div class="control-legend" aria-label="Square control color key">
+          <span><i class="white-control"></i>White control</span><span><i class="black-control"></i>Black control</span><span><i class="contested-control"></i>Contested</span><span><i class="uncontrolled-control"></i>Uncontrolled</span>
+        </div>
+      </div>
+
+      <aside class="controls-panel">
+        <section class="control-section game-section" id="gameSection" hidden>
+          <div class="section-title"><span class="step-number">00</span><h2>Replay a game</h2></div>
+          <label for="gameSelect">Saved games</label>
+          <select id="gameSelect" aria-label="Choose a saved PGN game"></select>
+          <p class="game-summary" id="gameSummary"></p>
+          <div class="replay-toolbar">
+            <button class="replay-button" id="startGameButton" type="button" title="Starting position" aria-label="Starting position">|‹</button>
+            <button class="replay-button" id="previousMoveButton" type="button" title="Previous move" aria-label="Previous move">‹</button>
+            <span id="moveCounter" aria-live="polite">START POSITION</span>
+            <button class="replay-button" id="nextMoveButton" type="button" title="Next move" aria-label="Next move">›</button>
+            <button class="replay-button" id="endGameButton" type="button" title="Final position" aria-label="Final position">›|</button>
+          </div>
+          <div class="move-list" id="moveList" aria-label="Game moves"></div>
+        </section>
+
+        <section class="control-section pgn-import-section">
+          <div class="section-title"><span class="step-number">PGN</span><h2>Add a Lichess game</h2></div>
+          <input id="pgnFileInput" type="file" accept=".pgn,application/x-chess-pgn,text/plain" hidden>
+          <button class="upload-button" id="uploadPgnButton" type="button">Choose a PGN file</button>
+          <label for="pgnTextInput" class="pgn-paste-label">Or paste PGN text</label>
+          <textarea id="pgnTextInput" class="pgn-text-input" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="Paste the PGN text copied from Lichess…"></textarea>
+          <button class="text-button import-pgn-button" id="importPgnButton" type="button">Import pasted game <span aria-hidden="true">→</span></button>
+          <p class="pgn-import-status" id="pgnImportStatus" role="status" aria-live="polite" hidden></p>
+          <p class="help-text browser-note">Imported games are saved only in this browser.</p>
+        </section>
+
+        <section class="control-section">
+          <div class="section-title"><span class="step-number">01</span><h2>Position notation</h2></div>
+          <label for="fenInput">FEN string <span class="label-hint">(or piece placement)</span></label>
+          <textarea id="fenInput" spellcheck="false" autocapitalize="off" autocomplete="off" aria-describedby="fenHelp"></textarea>
+          <p class="help-text" id="fenHelp">Paste a full FEN, or just the eight ranks. Position legality is not enforced.</p>
+          <p class="error-message" id="fenError" role="alert" hidden></p>
+          <button id="resetButton" class="text-button" type="button"><span aria-hidden="true">↺</span> Reset to starting position</button>
+        </section>
+
+        <section class="control-section export-section">
+          <div class="section-title"><span class="step-number">02</span><h2>Take it with you</h2></div>
+          <p class="export-copy">Save a still image of this position or an animation of the selected game.</p>
+          <button id="exportButton" class="export-button" type="button"><span>Export position</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 17v3h14v-3"/></svg></button>
+          <div class="export-result" id="exportResult" aria-live="polite" hidden></div>
+        </section>
+        <div class="privacy-note"><span aria-hidden="true">◈</span><p>Your positions stay on this machine. Nothing is uploaded.</p></div>
+      </aside>
+    </section>
+
+    <footer><a href="../">BOARDROOM</a><span>AMELIA URQUHART / MICROSOFT COPILOT</span></footer>
+  </main>
+  <dialog class="export-dialog" id="exportDialog" aria-labelledby="exportDialogTitle">
+    <form method="dialog">
+      <p class="eyebrow">EXPORT IMAGE</p>
+      <h2 id="exportDialogTitle">Choose a format</h2>
+      <p class="dialog-copy">PNG saves the current position. GIF replays the selected game from start to finish.</p>
+      <div class="dialog-actions">
+        <button class="export-format-button" id="exportPngButton" value="png">PNG <span>Current position</span></button>
+        <button class="export-format-button" id="exportGifButton" value="gif">GIF <span>Whole game</span></button>
+        <button class="dialog-cancel" value="cancel">Cancel</button>
+      </div>
+    </form>
+  </dialog>
+  <script src="./app.js?v=7" defer></script>
+</body>
+</html>
