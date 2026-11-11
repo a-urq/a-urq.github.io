@@ -110,7 +110,7 @@ function getPinConstraints(position) {
   return constraints;
 }
 
-function attacksFrom(position, row, file, piece, pinConstraints) {
+function attacksFrom(position, row, file, piece, pinConstraints, { ignorePins = false, continueThroughKing = true } = {}) {
   const targets = [];
   const lower = piece.toLowerCase();
   const color = piece === lower ? 'black' : 'white';
@@ -140,17 +140,29 @@ function attacksFrom(position, row, file, piece, pinConstraints) {
       while (r >= 0 && r < 8 && f >= 0 && f < 8) {
         targets.push([r, f]);
         const blocker = position.squares[r][f];
-        if (blocker && blocker.toLowerCase() !== 'k') break;
+        if (blocker && (!continueThroughKing || blocker.toLowerCase() !== 'k')) break;
         r += dr;
         f += df;
       }
     }
   }
   const king = pinConstraints.get(`${row},${file}`);
-  const legalTargets = king
+  const legalTargets = king && !ignorePins
     ? targets.filter(([targetRow, targetFile]) => (targetRow - king.row) * (file - king.file) === (targetFile - king.file) * (row - king.row))
     : targets;
   return { color, targets: legalTargets };
+}
+
+function isSquareAttacked(position, targetRow, targetFile, byColor) {
+  const noPinConstraints = new Map();
+  return position.squares.some((rank, row) => rank.some((piece, file) => {
+    if (!piece || (piece === piece.toLowerCase() ? 'black' : 'white') !== byColor) return false;
+    const { targets } = attacksFrom(position, row, file, piece, noPinConstraints, {
+      ignorePins: true,
+      continueThroughKing: false,
+    });
+    return targets.some(([attackRow, attackFile]) => attackRow === targetRow && attackFile === targetFile);
+  }));
 }
 
 function getControlMap(position) {
@@ -158,7 +170,19 @@ function getControlMap(position) {
   const pinConstraints = getPinConstraints(position);
   position.squares.forEach((rank, row) => rank.forEach((piece, file) => {
     if (!piece) return;
-    const { color, targets } = attacksFrom(position, row, file, piece, pinConstraints);
+    const { color, targets: attacks } = attacksFrom(position, row, file, piece, pinConstraints);
+    let targets = attacks;
+    if (piece.toLowerCase() === 'k') {
+      targets = targets.filter(([targetRow, targetFile]) => {
+        const squares = position.squares.map((currentRank) => currentRank.slice());
+        squares[row][file] = null;
+        const targetPiece = squares[targetRow][targetFile];
+        if (targetPiece && (targetPiece === targetPiece.toLowerCase() ? 'black' : 'white') !== color) {
+          squares[targetRow][targetFile] = null;
+        }
+        return !isSquareAttacked({ ...position, squares }, targetRow, targetFile, color === 'white' ? 'black' : 'white');
+      });
+    }
     for (const [r, f] of targets) control[r][f] |= color === 'white' ? 1 : 2;
   }));
   return control;
