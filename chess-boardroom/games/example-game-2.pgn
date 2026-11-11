@@ -1,0 +1,23 @@
+[Event "rated rapid game"]
+[Site "https://lichess.org/game/Tz9FKFcf"]
+[Date "2026.11.08"]
+[Round "-"]
+[White "a-urq"]
+[Black "[Anonymous Lichess User]"]
+[Result "1-0"]
+[GameId "Tz9FKFcf"]
+[UTCDate "2026.11.08"]
+[UTCTime "12:23:53"]
+[WhiteElo "806"]
+[BlackElo "881"]
+[WhiteRatingDiff "+89"]
+[BlackRatingDiff "-5"]
+[Variant "Standard"]
+[TimeControl "600+0"]
+[ECO "B00"]
+[Opening "Borg Defense"]
+[Termination "Normal"]
+
+1. e4 g5 2. b3 Bg7 3. Nc3 b5 4. Nxb5 a6 5. Nc3 Bb7 6. Bc4 c5 7. Nf3 d5 8. Bxd5 Ra7 9. Nxg5 f6 10. Nf7 Qd6 11. Nxd6+ exd6 12. Qh5+ Kd7 13. Qg4+ Ke7 14. Qxg7+ Ke8 15. Qxh8 f5 16. Qxg8+ Kd7 17. Qxb8 c4 18. Qxa7 cxb3 19. Qxb7+ Kd8 20. Qxb3 a5 21. exf5 a4 22. Qxa4 h6 23. f6 h5 24. Qa7 h4 25. f7 h3 26. f8=Q# 1-0
+
+

@@ -32,6 +32,24 @@ button { color: inherit; }
 .intro-copy { max-width: 440px; margin: 0; color: var(--muted); line-height: 1.7; font-size: 14px; }
 .workspace { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(310px, .75fr); gap: 18px; align-items: stretch; }
 .board-panel, .controls-panel { border: 1px solid var(--line); border-radius: 14px; background: color-mix(in srgb, var(--panel) 94%, transparent); }
+.control-chart-panel { margin-top: 15px; padding-top: 15px; border-top: 1px solid #ffffff12; }
+.control-chart-panel[hidden] { display: none; }
+.chart-heading { display: flex; flex-direction: column; gap: 8px; }
+.chart-heading h3 { margin: 0; font-size: 13px; font-weight: 500; }
+.chart-description { margin: 4px 0 0; color: var(--muted); font-size: 9px; line-height: 1.5; }
+.chart-legend { display: flex; flex-wrap: wrap; gap: 6px 12px; color: #aab8aa; font-size: 9px; }
+.chart-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.chart-legend i { width: 9px; height: 9px; border: 1px solid #ffffff20; border-radius: 3px; }
+.control-chart { display: block; width: 100%; height: auto; margin-top: 8px; overflow: visible; cursor: crosshair; touch-action: none; }
+.control-chart:focus-visible { outline: 2px solid var(--green); outline-offset: 3px; border-radius: 3px; }
+.chart-grid { stroke: #ffffff17; stroke-width: 1; }
+.chart-axis-label { fill: #91a093; font: 9px var(--mono); }
+.chart-area { stroke: none; }
+.chart-area-white { fill: #77b7e8; }
+.chart-area-black { fill: #e88782; }
+.chart-area-contested { fill: #b497db; }
+.chart-cursor line { stroke: #f0f3ed; stroke-width: 1.5; stroke-dasharray: 3 3; }
+.chart-readout { min-height: 14px; margin: 0; color: #b7c4b8; font: 8px/1.5 var(--mono); }
 .board-panel { padding: 23px; }
 .panel-heading { min-height: 48px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
 .panel-heading .eyebrow { font-size: 9px; color: #93a296; }
@@ -49,10 +67,10 @@ button { color: inherit; }
 .control-legend { display: flex; flex-wrap: wrap; gap: 9px 14px; padding-top: 13px; color: #aab8aa; font-size: 9px; }
 .control-legend span { display: inline-flex; align-items: center; gap: 6px; }
 .control-legend i { width: 12px; height: 12px; border: 1px solid #ffffff20; border-radius: 3px; }
-.white-control { background: linear-gradient(135deg, #80bcf5 50%, #367bc4 50%); }
-.black-control { background: linear-gradient(135deg, #f3918d 50%, #c74853 50%); }
-.contested-control { background: linear-gradient(135deg, #bc9be7 50%, #8055b6 50%); }
-.uncontrolled-control { background: linear-gradient(135deg, #d5d0c6 50%, #827b72 50%); }
+.white-control { background: linear-gradient(135deg, #77b7e8 50%, #65a2d8 50%); }
+.black-control { background: linear-gradient(135deg, #e88782 50%, #d87576 50%); }
+.contested-control { background: linear-gradient(135deg, #b497db 50%, #a17fd0 50%); }
+.uncontrolled-control { background: linear-gradient(135deg, #c4bfb4 50%, #b3ada2 50%); }
 .controls-panel { padding: 26px 25px 20px; display: flex; flex-direction: column; }
 .control-section + .control-section { border-top: 1px solid #ffffff12; margin-top: 25px; padding-top: 23px; }
 .game-section[hidden] { display: none; }
@@ -67,8 +85,8 @@ button { color: inherit; }
 .pgn-import-status.error { color: #f0a59a; }
 .pgn-import-status[hidden] { display: none; }
 .game-summary { min-height: 15px; margin: 8px 0 12px; color: #91a093; font: 9px/1.6 var(--mono); }
-.replay-toolbar { display: flex; align-items: center; justify-content: center; gap: 7px; margin-bottom: 10px; }
-.replay-button { min-width: 30px; height: 29px; padding: 0 6px; border: 1px solid var(--line); border-radius: 6px; background: #1b2820; color: #d3ddd2; cursor: pointer; }
+.replay-toolbar { display: grid; grid-template-columns: 44px 44px minmax(0, 1fr) 44px 44px; align-items: center; gap: 7px; margin-bottom: 10px; }
+.replay-button { min-width: 44px; height: 44px; padding: 0 8px; border: 1px solid var(--line); border-radius: 8px; background: #1b2820; color: #d3ddd2; font-size: 16px; cursor: pointer; }
 .replay-button:hover:not(:disabled) { border-color: #83977f; color: var(--green); }
 .replay-button:disabled { opacity: .4; cursor: default; }
 #moveCounter { min-width: 0; overflow: hidden; color: #b7c4b8; font: 9px var(--mono); text-align: center; text-overflow: ellipsis; white-space: nowrap; }
