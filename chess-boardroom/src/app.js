@@ -2,6 +2,7 @@ import { Chess } from 'chess.js';
 import { GIFEncoder, applyPalette, quantize } from 'gifenc';
 import { PIECE_DEFS, PIECE_IDS } from './pieces.js';
 import examplePgn from '../games/example-game.pgn';
+import examplePgn2 from '../games/example-game-2.pgn';
 
 const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 const GAME_STORAGE_KEY = 'boardroom.importedPgnGames.v1';
@@ -27,6 +28,10 @@ const pgnTextInput = document.querySelector('#pgnTextInput');
 const pgnImportStatus = document.querySelector('#pgnImportStatus');
 const exportDialog = document.querySelector('#exportDialog');
 const exportGifButton = document.querySelector('#exportGifButton');
+const controlChartPanel = document.querySelector('#controlChartPanel');
+const controlChart = document.querySelector('#controlChart');
+const controlChartLegend = document.querySelector('#controlChartLegend');
+const controlChartReadout = document.querySelector('#controlChartReadout');
 
 let orientation = 'white';
 let replay = null;
@@ -34,6 +39,7 @@ let currentPly = 0;
 let currentPosition = null;
 let previewTimer;
 let games = [];
+let chartPointerId = null;
 
 function parseFen(input) {
   const trimmed = input.trim() || START_FEN;
@@ -63,7 +69,48 @@ function parseFen(input) {
   return { placement, fen: fields.slice(0, 6).join(' '), squares };
 }
 
-function attacksFrom(position, row, file, piece) {
+function getPinConstraints(position) {
+  const constraints = new Map();
+  const directions = [
+    [-1, -1], [-1, 0], [-1, 1], [0, -1],
+    [0, 1], [1, -1], [1, 0], [1, 1],
+  ];
+  const kings = [];
+  position.squares.forEach((rank, row) => rank.forEach((piece, file) => {
+    if (piece?.toLowerCase() === 'k') kings.push({ row, file, color: piece === 'k' ? 'black' : 'white' });
+  }));
+
+  for (const king of kings) {
+    for (const [dr, df] of directions) {
+      let row = king.row + dr;
+      let file = king.file + df;
+      let candidate = null;
+      while (row >= 0 && row < 8 && file >= 0 && file < 8) {
+        const piece = position.squares[row][file];
+        if (piece) {
+          const color = piece === piece.toLowerCase() ? 'black' : 'white';
+          if (!candidate) {
+            if (color !== king.color) break;
+            candidate = { row, file };
+          } else {
+            if (color !== king.color) {
+              const type = piece.toLowerCase();
+              const diagonal = dr !== 0 && df !== 0;
+              const pinsOnRay = type === 'q' || (diagonal ? type === 'b' : type === 'r');
+              if (pinsOnRay) constraints.set(`${candidate.row},${candidate.file}`, king);
+            }
+            break;
+          }
+        }
+        row += dr;
+        file += df;
+      }
+    }
+  }
+  return constraints;
+}
+
+function attacksFrom(position, row, file, piece, pinConstraints) {
   const targets = [];
   const lower = piece.toLowerCase();
   const color = piece === lower ? 'black' : 'white';
@@ -92,23 +139,39 @@ function attacksFrom(position, row, file, piece) {
       let f = file + df;
       while (r >= 0 && r < 8 && f >= 0 && f < 8) {
         targets.push([r, f]);
-        if (position.squares[r][f]) break;
+        const blocker = position.squares[r][f];
+        if (blocker && blocker.toLowerCase() !== 'k') break;
         r += dr;
         f += df;
       }
     }
   }
-  return { color, targets };
+  const king = pinConstraints.get(`${row},${file}`);
+  const legalTargets = king
+    ? targets.filter(([targetRow, targetFile]) => (targetRow - king.row) * (file - king.file) === (targetFile - king.file) * (row - king.row))
+    : targets;
+  return { color, targets: legalTargets };
 }
 
 function getControlMap(position) {
   const control = Array.from({ length: 8 }, () => Array(8).fill(0));
+  const pinConstraints = getPinConstraints(position);
   position.squares.forEach((rank, row) => rank.forEach((piece, file) => {
     if (!piece) return;
-    const { color, targets } = attacksFrom(position, row, file, piece);
+    const { color, targets } = attacksFrom(position, row, file, piece, pinConstraints);
     for (const [r, f] of targets) control[r][f] |= color === 'white' ? 1 : 2;
   }));
   return control;
+}
+
+function countControlledSquares(position) {
+  const counts = { white: 0, black: 0, contested: 0 };
+  getControlMap(position).forEach((rank) => rank.forEach((value) => {
+    if (value === 1) counts.white += 1;
+    else if (value === 2) counts.black += 1;
+    else if (value === 3) counts.contested += 1;
+  }));
+  return { ...counts, total: counts.white + counts.black + counts.contested };
 }
 
 function renderBoard(position) {
@@ -146,6 +209,7 @@ function updateReplayControls() {
   document.querySelectorAll('.move-cell').forEach((button) => {
     button.classList.toggle('active', Number(button.dataset.ply) === currentPly);
   });
+  updateControlChartCursor();
 }
 
 function updatePosition(input) {
@@ -213,6 +277,8 @@ function loadPgnGame(id, pgn, fallbackName = 'PGN game') {
     sideToMove = color === 'white' ? 'black' : 'white';
     return replayMove;
   });
+  const controlTimeline = [startingFen, ...moves.map((move) => move.fen)]
+    .map((fen) => countControlledSquares(parseFen(fen)));
   return {
     id,
     pgn,
@@ -225,8 +291,124 @@ function loadPgnGame(id, pgn, fallbackName = 'PGN game') {
     event: headers.Event || fallbackName,
     startingFen,
     moves,
+    controlTimeline,
   };
 }
+
+function renderControlChart() {
+  if (!replay) {
+    controlChartPanel.hidden = true;
+    return;
+  }
+
+  controlChartPanel.hidden = false;
+  controlChart.setAttribute('tabindex', '0');
+  controlChart.setAttribute('aria-label', `Interactive square control chart; ${replay.moves.length} plies. Use left and right arrow keys to select a ply.`);
+  const data = replay.controlTimeline;
+  const width = 420;
+  const height = 230;
+  const left = 36;
+  const right = 10;
+  const top = 12;
+  const bottom = 180;
+  const plotWidth = width - left - right;
+  const plotHeight = bottom - top;
+  const x = (index) => left + (data.length > 1 ? index / (data.length - 1) : 0) * plotWidth;
+  const percent = (item, key) => item.total ? item[key] / item.total * 100 : 0;
+  const bottomKey = orientation === 'white' ? 'white' : 'black';
+  const topKey = orientation === 'white' ? 'black' : 'white';
+  const bottomValues = data.map((item) => percent(item, bottomKey));
+  const contestedValues = data.map((item, index) => bottomValues[index] + percent(item, 'contested'));
+  const zeroValues = data.map(() => 0);
+  const fullValues = data.map(() => 100);
+  const y = (value) => top + (100 - value) / 100 * plotHeight;
+  const areaPath = (upper, lower) => {
+    const upperPath = upper.map((value, index) => `${index ? 'L' : 'M'} ${x(index).toFixed(2)} ${y(value).toFixed(2)}`).join(' ');
+    const lowerPath = lower.map((_, reverseIndex) => {
+      const index = lower.length - reverseIndex - 1;
+      return `L ${x(index).toFixed(2)} ${y(lower[index]).toFixed(2)}`;
+    }).join(' ');
+    return `${upperPath} ${lowerPath} Z`;
+  };
+  const grid = [0, 25, 50, 75, 100].map((value) => {
+    const yPosition = y(value);
+    return `<line class="chart-grid" x1="${left}" y1="${yPosition}" x2="${width - right}" y2="${yPosition}"/><text class="chart-axis-label" x="${left - 10}" y="${yPosition + 3}" text-anchor="end">${value}%</text>`;
+  }).join('');
+  const labels = [...new Set([0, Math.floor((data.length - 1) / 2), data.length - 1])].map((ply) => {
+    const anchor = ply === 0 ? 'start' : ply === data.length - 1 ? 'end' : 'middle';
+    return `<text class="chart-axis-label" x="${x(ply)}" y="${bottom + 20}" text-anchor="${anchor}">${ply}</text>`;
+  }).join('');
+  const seriesNames = { white: 'White', black: 'Black', contested: 'Contested' };
+  const series = [
+    { key: bottomKey, upper: bottomValues, lower: zeroValues },
+    { key: 'contested', upper: contestedValues, lower: bottomValues },
+    { key: topKey, upper: fullValues, lower: contestedValues },
+  ];
+  controlChartLegend.innerHTML = series.map(({ key }) => `<span><i class="${key}-control"></i>${seriesNames[key]}</span>`).join('');
+  const cursorX = x(Math.max(0, currentPly || 0));
+  const areas = series.map(({ key, upper, lower }) => `<path class="chart-area chart-area-${key}" d="${areaPath(upper, lower)}"/>`).join('');
+  controlChart.innerHTML = `${grid}${areas}<line class="chart-grid" x1="${left}" y1="${bottom}" x2="${width - right}" y2="${bottom}"/><text class="chart-axis-label" x="${left + plotWidth / 2}" y="${height - 4}" text-anchor="middle">Ply (half-moves)</text>${labels}<g class="chart-cursor" id="chartCursor" transform="translate(${cursorX} 0)"><line x1="0" y1="${top}" x2="0" y2="${bottom}"/></g>`;
+  updateControlChartCursor();
+}
+
+function updateControlChartCursor() {
+  if (!replay || controlChartPanel.hidden) return;
+  const cursor = controlChart.querySelector('#chartCursor');
+  const data = replay.controlTimeline;
+  if (!cursor || !data.length) return;
+  if (currentPly === null) {
+    cursor.setAttribute('visibility', 'hidden');
+    controlChartReadout.textContent = 'Custom position · not on the selected game timeline';
+    return;
+  }
+
+  const ply = Math.max(0, Math.min(currentPly, data.length - 1));
+  const left = 36;
+  const plotWidth = 420 - left - 10;
+  const x = left + (data.length > 1 ? ply / (data.length - 1) : 0) * plotWidth;
+  const item = data[ply];
+  cursor.setAttribute('transform', `translate(${x} 0)`);
+  cursor.setAttribute('visibility', 'visible');
+  const label = ply === 0 ? 'Starting position' : `After ${replay.moves[ply - 1].label}`;
+  controlChartReadout.textContent = `${label} · White ${item.white} · Black ${item.black} · Contested ${item.contested} · ${item.total} controlled squares`;
+}
+
+function selectPlyFromChartPointer(event) {
+  if (!replay || !event.isPrimary && event.type === 'pointerdown') return;
+  const bounds = controlChart.getBoundingClientRect();
+  if (!bounds.width || !replay.moves.length) return;
+  const viewX = (event.clientX - bounds.left) / bounds.width * 420;
+  const plotStart = 36;
+  const plotWidth = 420 - plotStart - 10;
+  const ratio = Math.max(0, Math.min(1, (viewX - plotStart) / plotWidth));
+  showPly(Math.round(ratio * replay.moves.length));
+}
+
+controlChart.addEventListener('pointerdown', (event) => {
+  if (!replay || !event.isPrimary || event.button !== 0) return;
+  chartPointerId = event.pointerId;
+  controlChart.setPointerCapture(event.pointerId);
+  selectPlyFromChartPointer(event);
+  event.preventDefault();
+});
+controlChart.addEventListener('pointermove', (event) => {
+  if (chartPointerId !== event.pointerId) return;
+  selectPlyFromChartPointer(event);
+});
+controlChart.addEventListener('pointerup', (event) => {
+  if (chartPointerId === event.pointerId) chartPointerId = null;
+});
+controlChart.addEventListener('pointercancel', () => { chartPointerId = null; });
+controlChart.addEventListener('lostpointercapture', () => { chartPointerId = null; });
+controlChart.addEventListener('keydown', (event) => {
+  if (!replay || currentPly === null) return;
+  if (event.key === 'ArrowLeft' || event.key === 'ArrowRight' || event.key === 'Home' || event.key === 'End') {
+    event.preventDefault();
+    if (event.key === 'Home') showPly(0);
+    else if (event.key === 'End') showPly(replay.moves.length);
+    else showPly(currentPly + (event.key === 'ArrowRight' ? 1 : -1));
+  }
+});
 
 function showPly(ply) {
   if (!replay) return;
@@ -239,6 +421,7 @@ function showPly(ply) {
 function displayGame(game) {
   replay = game;
   currentPly = 0;
+  renderControlChart();
   document.querySelector('#gameSummary').textContent = [game.event, game.date, game.opening, game.result].filter(Boolean).join(' · ');
   renderMoves(game.moves);
   showPly(0);
@@ -273,20 +456,21 @@ function refreshGamePicker(selectId = '') {
 }
 
 function initializeGames() {
-  let defaultGame = null;
+  const defaultGames = [];
   try {
-    defaultGame = loadPgnGame('example-game.pgn', examplePgn, 'Example Lichess game');
+    defaultGames.push(loadPgnGame('example-game.pgn', examplePgn, 'Example Lichess game'));
   } catch { /* The starting board remains useful if the bundled example is invalid. */ }
+  try {
+    defaultGames.push(loadPgnGame('example-game-2.pgn', examplePgn2, 'Example Lichess game 2'));
+  } catch { /* Keep the first default game available if this example is invalid. */ }
 
   const storedGames = [];
   for (const saved of readStoredGames()) {
     try { storedGames.push(loadPgnGame(saved.id, saved.pgn, saved.name)); }
     catch { /* Ignore stored games that are no longer parseable. */ }
   }
-  games = defaultGame
-    ? [defaultGame, ...storedGames.filter((game) => game.id !== defaultGame.id)]
-    : storedGames;
-  const initialGame = defaultGame || storedGames[0] || null;
+  games = [...defaultGames, ...storedGames.filter((game) => !defaultGames.some((defaultGame) => game.id === defaultGame.id))];
+  const initialGame = defaultGames[0] || storedGames[0] || null;
   refreshGamePicker(initialGame?.id || '');
   if (initialGame) displayGame(initialGame);
 }
@@ -478,12 +662,14 @@ document.querySelector('#orientationButton').addEventListener('click', () => {
   orientation = orientation === 'white' ? 'black' : 'white';
   document.querySelector('#orientationButton').setAttribute('aria-label', `Flip board orientation; ${orientation} is at bottom`);
   if (currentPosition) renderBoard(currentPosition);
+  renderControlChart();
   updateBoardCaption();
 });
 
 document.querySelector('#resetButton').addEventListener('click', () => {
   replay = null;
   currentPly = null;
+  renderControlChart();
   fenInput.value = START_FEN;
   updatePosition(fenInput.value);
   updateReplayControls();

@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#101914">
   <meta name="description" content="Explore chess positions, replay PGN games, and export control maps.">
   <title>Boardroom — Chess Position Visualizer</title>
-  <link rel="stylesheet" href="./style.css?v=4">
+  <link rel="stylesheet" href="./style.css?v=8">
 </head>
 <body>
   <main class="app-shell">
@@ -18,7 +18,7 @@
     <section class="intro">
       <p class="eyebrow">POSITION STUDIO <span>/</span> 01</p>
       <h1>See the whole<br><em>board.</em></h1>
-      <p class="intro-copy">Explore a position, replay a Lichess game, and see which squares are under pressure.</p>
+      <p class="intro-copy">Explore a position, replay a game from PGN, and see which squares are under pressure.</p>
     </section>
 
     <section class="workspace" aria-label="Chess position visualizer">
@@ -50,14 +50,25 @@
             <button class="replay-button" id="endGameButton" type="button" title="Final position" aria-label="Final position">›|</button>
           </div>
           <div class="move-list" id="moveList" aria-label="Game moves"></div>
+          <div class="control-chart-panel" id="controlChartPanel" aria-labelledby="controlChartTitle" hidden>
+            <div class="chart-heading">
+              <div>
+                <h3 id="controlChartTitle">Control over time</h3>
+                <p class="chart-description">Share by ply · uncontrolled squares excluded</p>
+              </div>
+              <div class="chart-legend" id="controlChartLegend" aria-label="Chart series"></div>
+            </div>
+            <svg class="control-chart" id="controlChart" viewBox="0 0 420 230" role="img" aria-label="100 percent stacked area chart of square control by ply"></svg>
+            <p class="chart-readout" id="controlChartReadout" aria-live="polite"></p>
+          </div>
         </section>
 
         <section class="control-section pgn-import-section">
-          <div class="section-title"><span class="step-number">PGN</span><h2>Add a Lichess game</h2></div>
+          <div class="section-title"><span class="step-number">PGN</span><h2>Add a game from PGN</h2></div>
           <input id="pgnFileInput" type="file" accept=".pgn,application/x-chess-pgn,text/plain" hidden>
           <button class="upload-button" id="uploadPgnButton" type="button">Choose a PGN file</button>
           <label for="pgnTextInput" class="pgn-paste-label">Or paste PGN text</label>
-          <textarea id="pgnTextInput" class="pgn-text-input" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="Paste the PGN text copied from Lichess…"></textarea>
+          <textarea id="pgnTextInput" class="pgn-text-input" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="Paste the PGN text copied from Chess.com or Lichess…"></textarea>
           <button class="text-button import-pgn-button" id="importPgnButton" type="button">Import pasted game <span aria-hidden="true">→</span></button>
           <p class="pgn-import-status" id="pgnImportStatus" role="status" aria-live="polite" hidden></p>
           <p class="help-text browser-note">Imported games are saved only in this browser.</p>
@@ -96,6 +107,6 @@
       </div>
     </form>
   </dialog>
-  <script src="./app.js?v=8" defer></script>
+  <script src="./app.js?v=14" defer></script>
 </body>
 </html>
