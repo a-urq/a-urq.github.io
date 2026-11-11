@@ -7,10 +7,10 @@ const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 const GAME_STORAGE_KEY = 'boardroom.importedPgnGames.v1';
 const FILES = 'abcdefgh';
 const CONTROL_COLORS = {
-  uncontrolled: ['#d5d0c6', '#827b72'],
-  white: ['#80bcf5', '#367bc4'],
-  black: ['#f3918d', '#c74853'],
-  contested: ['#bc9be7', '#8055b6'],
+  uncontrolled: ['#c4bfb4', '#b3ada2'],
+  white: ['#77b7e8', '#65a2d8'],
+  black: ['#e88782', '#d87576'],
+  contested: ['#b497db', '#a17fd0'],
 };
 
 const boardElement = document.querySelector('#board');

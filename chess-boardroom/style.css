@@ -49,10 +49,10 @@ button { color: inherit; }
 .control-legend { display: flex; flex-wrap: wrap; gap: 9px 14px; padding-top: 13px; color: #aab8aa; font-size: 9px; }
 .control-legend span { display: inline-flex; align-items: center; gap: 6px; }
 .control-legend i { width: 12px; height: 12px; border: 1px solid #ffffff20; border-radius: 3px; }
-.white-control { background: linear-gradient(135deg, #80bcf5 50%, #367bc4 50%); }
-.black-control { background: linear-gradient(135deg, #f3918d 50%, #c74853 50%); }
-.contested-control { background: linear-gradient(135deg, #bc9be7 50%, #8055b6 50%); }
-.uncontrolled-control { background: linear-gradient(135deg, #d5d0c6 50%, #827b72 50%); }
+.white-control { background: linear-gradient(135deg, #77b7e8 50%, #65a2d8 50%); }
+.black-control { background: linear-gradient(135deg, #e88782 50%, #d87576 50%); }
+.contested-control { background: linear-gradient(135deg, #b497db 50%, #a17fd0 50%); }
+.uncontrolled-control { background: linear-gradient(135deg, #c4bfb4 50%, #b3ada2 50%); }
 .controls-panel { padding: 26px 25px 20px; display: flex; flex-direction: column; }
 .control-section + .control-section { border-top: 1px solid #ffffff12; margin-top: 25px; padding-top: 23px; }
 .game-section[hidden] { display: none; }
